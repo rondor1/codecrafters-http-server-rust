@@ -2,8 +2,6 @@
 use std::{io::{Read, Write}, net::{TcpListener, TcpStream}};
 use std::str;
 
-use itertools::Itertools;
-
 fn handle_request(request : &str, stream : &mut TcpStream) -> Result<(), &'static str> {
     if request.len() <= 0 {
         return Err("Invalid data provided!");
@@ -12,13 +10,33 @@ fn handle_request(request : &str, stream : &mut TcpStream) -> Result<(), &'stati
     let mut request_parts = request.split_whitespace();
 
     let request_type = request_parts.next().unwrap();
+    if !request_type.contains("GET") {
+        stream.write("HTTP/1.1 404 Not found\r\n\r\n".as_bytes()).unwrap();
+    }
     let request_path = request_parts.next().unwrap();
 
     if request_path == "/" {
         stream.write("HTTP/1.1 200 OK\r\n\r\n".as_bytes()).unwrap();
+    } else if request_path.starts_with("/echo/") {
+        let body = request_path.split_at("/echo/".len()).1;
+        let mut resp = String::from("HTTP/1.1 200 OK\r\n\r\n");
+        resp.push_str("Content-Type: text/plain\r\n\r\n");
+        resp.push_str("Content-Length:");
+        resp.push_str(body.len().to_string().as_str());
+        resp.push_str("\r\n\r\n");
+        resp.push_str(body);
+        resp.push_str("\r\n\r\n");
+        stream.write(resp.as_bytes()).unwrap();
     } else {
-        stream.write("HTTP/1.1 404 Not Found\r\n\r\n".as_bytes()).unwrap();
+        stream.write("HTTP/1.1 404 Not found\r\n\r\n".as_bytes()).unwrap();
     }
+
+
+    // if request_path == "/" {
+    //     stream.write("HTTP/1.1 200 OK\r\n\r\n".as_bytes()).unwrap();
+    // } else {
+    //     stream.write("HTTP/1.1 404 Not Found\r\n\r\n".as_bytes()).unwrap();
+    // }
 
 
     Ok(())
